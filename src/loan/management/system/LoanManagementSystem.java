@@ -8,13 +8,14 @@ package loan.management.system;
  *
  * @author Onyx
  */
-public class LoanManagementSystem {
+import java.util.ArrayList;
+import java.util.Scanner;
 
-    /**
-     * @param args the command line arguments
-     */
+public class LoanManagementSystem {
     
     public static void main(String[] args) {
+//    dashboard variables
+
         new Login().setVisible(true);
     }
     
