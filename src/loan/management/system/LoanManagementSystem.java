@@ -14,8 +14,7 @@ import java.util.Scanner;
 public class LoanManagementSystem {
     
     public static void main(String[] args) {
-//    dashboard variables
-
+        
         new Login().setVisible(true);
     }
     

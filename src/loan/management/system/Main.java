@@ -9,6 +9,11 @@ package loan.management.system;
  * @author Onyx
  */
 import java.awt.Color;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+import java.sql.SQLException;
+import javax.swing.JOptionPane;
 public class Main extends javax.swing.JFrame {
    
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Main.class.getName());
@@ -81,6 +86,7 @@ public class Main extends javax.swing.JFrame {
         jTextField5.setText("jTextField5");
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setResizable(false);
 
         DButton.setBackground(new java.awt.Color(0, 153, 153));
         DButton.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -132,6 +138,7 @@ public class Main extends javax.swing.JFrame {
         LAmount.addActionListener(this::LAmountActionPerformed);
 
         Date.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        Date.setText("YYYY-MM-DD");
         Date.addActionListener(this::DateActionPerformed);
 
         jLabel12.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -219,8 +226,7 @@ public class Main extends javax.swing.JFrame {
                         .addGroup(ALPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addGroup(ALPanelLayout.createSequentialGroup()
                                 .addComponent(jLabel14)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(Term, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(53, 53, 53))
                             .addGroup(ALPanelLayout.createSequentialGroup()
                                 .addComponent(jLabel9)
                                 .addGap(37, 37, 37)
@@ -234,7 +240,9 @@ public class Main extends javax.swing.JFrame {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addComponent(jLabel12)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(Date, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addGroup(ALPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(Date, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(Term, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE))))
                         .addGap(18, 18, 18)
                         .addComponent(jLabel13)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -245,7 +253,7 @@ public class Main extends javax.swing.JFrame {
                         .addComponent(CAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(18, 18, 18)
                 .addComponent(jLabel6)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 36, Short.MAX_VALUE)
                 .addGroup(ALPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -453,14 +461,14 @@ public class Main extends javax.swing.JFrame {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(LButton, javax.swing.GroupLayout.PREFERRED_SIZE, 174, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(ALButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(LRButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(PButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addComponent(LButton, javax.swing.GroupLayout.PREFERRED_SIZE, 174, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(LRButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(PButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(ALButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(DButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
@@ -580,18 +588,55 @@ public class Main extends javax.swing.JFrame {
     }//GEN-LAST:event_CAddressActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        Connection conn = DatabaseConnection.connect();
+        
+       
+        if(conn!=null){
+            
         String client_name = CName.getText();
         int loan_amount = Integer.parseInt(LAmount.getText());
         String date = Date.getText();
         int term = Integer.parseInt(Term.getText());
-        int number = Integer.parseInt(Number.getText());
+        String number = Number.getText();
         String client_address = CAddress.getText();
+        
+        try{
+             
+            String sql = "INSERT into debtor (name, loan_amount, loan_date, loan_term, phone_number, address)" + 
+                    "VALUES ('" + client_name + "', " + loan_amount + ", '" + date + "', " + term + ", '" + number + "', '" + client_address + "')"; 
+             Statement stmt = conn.createStatement();
+            stmt.executeUpdate(sql);
+        }
+        catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "SQL Error: " + e.getMessage());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
+        }
+        
+        JOptionPane.showMessageDialog(null, "Loan Record Saved!");
+        
+        CName.setText("");
+        LAmount.setText("");
+        Date.setText("");
+        Term.setText("");
+        Number.setText("");
+        CAddress.setText("");
         
         Dashboard.cumulative_loan_amount += loan_amount;
         Dashboard.current_loans += 1;
         
         CLAdata.setText(String.valueOf(Dashboard.cumulative_loan_amount));
         CLdata.setText(String.valueOf(Dashboard.current_loans));
+        
+        
+        
+        
+        }
+        else{
+            JOptionPane.showMessageDialog(null, "No Database Connection!");
+        }
+        
+      
         
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -610,7 +655,12 @@ public class Main extends javax.swing.JFrame {
     }//GEN-LAST:event_PButtonActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        // TODO add your handling code here:
+        CName.setText("");
+        LAmount.setText("");
+        Date.setText("");
+        Term.setText("");
+        Number.setText("");
+        CAddress.setText("");
     }//GEN-LAST:event_jButton2ActionPerformed
 
     /**
