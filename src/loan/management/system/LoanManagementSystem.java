@@ -10,10 +10,15 @@ package loan.management.system;
  */
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.sql.Connection;
 
-public class LoanManagementSystem {
+public class LoanManagementSystem extends DatabaseConnection{
+    
+    
     
     public static void main(String[] args) {
+        DatabaseConnection dtbs = new DatabaseConnection();
+        Connection conn = dtbs.getConnection();
         
         new Login().setVisible(true);
     }

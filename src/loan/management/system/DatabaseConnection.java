@@ -1,29 +1,31 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package loan.management.system;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
-/**
- *
- * @author Onyx
- */
+import java.sql.SQLException;
 
 public class DatabaseConnection {
- public static Connection connect() {
+
+    private Connection conn; // make it private for safety
+
+    public DatabaseConnection() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection conn = DriverManager.getConnection(
+            conn = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/loan_management_system",
-                "root", ""  
+                "root",
+                ""
             );
-            return conn;
-        } catch (Exception e) {
-            System.out.println("Connection Error: " + e);
-            return null;
+            System.out.println("Database connected successfully!");
+        } catch (ClassNotFoundException e) {
+            System.out.println("MySQL Driver not found: " + e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
         }
     }
- 
- 
+
+    // Add this method to return the connection
+    public Connection getConnection() {
+        return conn;
+    }
 }
