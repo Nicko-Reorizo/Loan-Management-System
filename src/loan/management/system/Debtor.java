@@ -16,7 +16,6 @@ public abstract class Debtor{
 protected DatabaseConnection dtbs;
 protected Connection conn;
     
-    
     private String client_name;
     private int loan_amount;
     private String date;

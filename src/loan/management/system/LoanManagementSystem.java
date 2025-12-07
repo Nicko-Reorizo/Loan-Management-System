@@ -20,7 +20,7 @@ public class LoanManagementSystem extends DatabaseConnection{
         DatabaseConnection dtbs = new DatabaseConnection();
         Connection conn = dtbs.getConnection();
         
-        new Login().setVisible(true);
+        new Main().setVisible(true);
     }
     
 }

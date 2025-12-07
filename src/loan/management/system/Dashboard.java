@@ -9,8 +9,8 @@ import javax.swing.JOptionPane;
 public class Dashboard {
 
     public static int current_loans;
-    public static int cumulative_loan_amount = 0;
-    public static int cumulative_paid_amount = 0;
+    public static double cumulative_loan_amount = 0;
+    public static double cumulative_unpaid_amount = 0;
 
     private DatabaseConnection dtbs;
     private Connection conn;
@@ -18,28 +18,57 @@ public class Dashboard {
     public Dashboard() {
         dtbs = new DatabaseConnection();
         conn = dtbs.getConnection();
-        refreshDashboard();  // initial load
+        refreshDashboard();  
     }
 
     // Method to refresh the data
-    public void refreshDashboard() {
-        try {
-            if (conn != null) {
-                String sql = "SELECT COUNT(*) AS total FROM debtor";
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql);
+   public void refreshDashboard() {
+    try {
+        if (conn != null) {
+            // 1️⃣ Count total loans
+            String countSql = "SELECT COUNT(*) AS total FROM debtor";
+            Statement stmt1 = conn.createStatement();
+            ResultSet rs1 = stmt1.executeQuery(countSql);
 
-                if (rs.next()) {
-                    current_loans = rs.getInt("total");
-                    System.out.println("Current loans: " + current_loans);
-                }
-
-                
-            } else {
-                JOptionPane.showMessageDialog(null, "Database connection is null");
+            if (rs1.next()) {
+                current_loans = rs1.getInt("total");
+                System.out.println("Current loans: " + current_loans);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+
+            rs1.close();
+            stmt1.close();
+
+            // 2️⃣ Sum total loan amounts
+            String sumSql = "SELECT SUM(loan_amount) AS total_amount FROM debtor";
+            Statement stmt2 = conn.createStatement();
+            ResultSet rs2 = stmt2.executeQuery(sumSql);
+
+            if (rs2.next()) {
+                cumulative_loan_amount = rs2.getDouble("total_amount");
+                System.out.println("Total loan amount: " + cumulative_loan_amount);
+            }
+
+            rs2.close();
+            stmt2.close();
+
+            
+            String sumSql2 = "SELECT SUM(Balance) AS total_unpaid FROM debtor";
+            Statement stmt3 = conn.createStatement();
+            ResultSet rs3 = stmt3.executeQuery(sumSql2);
+            
+            if(rs3.next()){
+                cumulative_unpaid_amount = rs3.getDouble("total_unpaid");
+                System.out.println("Total unpaid amount: " + cumulative_unpaid_amount);
+            }
+            
+            rs3.close();
+            stmt3.close();
+        } else {
+            JOptionPane.showMessageDialog(null, "Database connection is null");
         }
+    } catch (SQLException e) {
+        e.printStackTrace();
     }
+}
+
 }

@@ -10,7 +10,7 @@ package loan.management.system;
  */
 import java.awt.Color;
 import java.sql.Connection;
-import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -35,15 +35,11 @@ public class Main extends javax.swing.JFrame {
         
        
         initComponents();
-        
-
-        
-        
         DPanel.setVisible(true);
         LRPanel.setVisible(false);
         ALPanel.setVisible(false);
-        
-        CPAdata.setText(String.valueOf(Dashboard.cumulative_paid_amount));
+        PPanel.setVisible(false);
+        CPAdata.setText(String.valueOf(Dashboard.cumulative_unpaid_amount));
         CLAdata.setText(String.valueOf(Dashboard.cumulative_loan_amount));
         CLdata.setText(String.valueOf(Dashboard.current_loans));
     }
@@ -51,25 +47,27 @@ public class Main extends javax.swing.JFrame {
     public void loadLoansToTable(JTable loan_table) {
     try {
         if (conn != null) {
-            String sql = "SELECT name, loan_amount, loan_date, loan_term, phone_number, address FROM debtor";
+            String sql = "SELECT name, loan_amount, Balance, loan_date, loan_term, address FROM debtor";
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sql);
 
             
+            
+//            This was created with the help of ChatGPT, and I modified the variables and table names.
             DefaultTableModel model = new DefaultTableModel(
-                new String[]{"Name", "Loan Amount", "Date", "Term", "Phone", "Address"}, 0
+                new String[]{"Name", "Loan Amount", "Balance", "Date", "Term", "Address"}, 0
             );
 
            
             while (rs.next()) {
                 String name = rs.getString("name");
-                int loanAmount = rs.getInt("loan_amount");
+                double loanAmount = rs.getInt("loan_amount");
+                double balance = rs.getDouble("Balance");
                 String date = rs.getString("loan_date");
                 int term = rs.getInt("loan_term");
-                String phone = rs.getString("phone_number");
                 String address = rs.getString("address");
 
-                model.addRow(new Object[]{name, loanAmount, date, term, phone, address});
+                model.addRow(new Object[]{name, loanAmount, balance, date, term, address});
             }
 
             
@@ -86,47 +84,47 @@ public class Main extends javax.swing.JFrame {
     }
 }
 
-        public void PaymentTable(JTable PTable, String SName) {
+        public void PaymentTable(String SName) {
     try {
         if (conn != null) {
-            String sql = "SELECT name, loan_amount, Balance, loan_term, monthly_due FROM debtor WHERE name = '" + SName + "'";
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql);
-            
-           
-                
+            String sql = "SELECT name, Balance,monthly_due FROM debtor WHERE name = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, SName);
+            ResultSet rs = pstmt.executeQuery();
             
             
             
-            
-            DefaultTableModel model = new DefaultTableModel(
-                new String[]{"Name", "Loan Amount", "Balance", "Term", "Monthly Payment"}, 0
-            );
 
-           boolean found = false;
-            while (rs.next()) {
-                found = true;
-                String name = rs.getString("name");
-                int loanAmount = rs.getInt("loan_amount");
+            boolean found = false;
+
+            if (rs.next()) {
                 double balance = rs.getDouble("Balance");
-                int term = rs.getInt("loan_term");
-                double monthly = rs.getDouble("monthly_due");
 
-                model.addRow(new Object[]{name, loanAmount, balance, term, monthly});
+                // Skip deleted rows
+                if (balance <= 0) {
+                    JOptionPane.showMessageDialog(null, SName + " is fully paid! Record will be deleted");
+                    String del = "DELETE FROM debtor WHERE Balance <= 0 AND name = ?";
+                    PreparedStatement delStmt = conn.prepareStatement(del);
+                    delStmt.setString(1, rs.getString("name"));
+                    delStmt.executeUpdate();
+                    delStmt.close();
+                    
+                }
+
+                found = true;
+              String n = rs.getString("name");
+              double b = rs.getDouble("Balance");
+              double m = rs.getDouble("monthly_due");
+              
+             NameInfo.setText(n);
+             BalanceInfo.setText(String.valueOf(b));
+             MonthlyInfo.setText(String.valueOf(m));
             }
-             
-            if(found){
-                PayButton.setEnabled(true);
-            }
-            else{
-                PayButton.setEnabled(false);
-            }
-                
+
+            PayButton.setEnabled(found);
             
-            PTable.setModel(model);
-
             rs.close();
-            stmt.close();
+            pstmt.close();
 
         } else {
             JOptionPane.showMessageDialog(null, "Database connection is null");
@@ -135,6 +133,22 @@ public class Main extends javax.swing.JFrame {
         e.printStackTrace();
     }
 }
+
+        
+        public void DeductLoan(String name) throws SQLException{
+            String sql = "UPDATE debtor SET Balance = Balance - monthly_due WHERE name = '" + name + "'";
+   
+            Statement stmt = conn.createStatement();
+            
+            
+            int rows = stmt.executeUpdate(sql);
+            
+            if(rows > 0){
+                JOptionPane.showMessageDialog(null,name + " Succesfully Paid this Month's Loan Amount");
+            }
+            PaymentTable(name);
+            loadLoansToTable(PTable);
+        }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -146,23 +160,14 @@ public class Main extends javax.swing.JFrame {
 
         jTextField5 = new javax.swing.JTextField();
         jLabel18 = new javax.swing.JLabel();
+        jLabel24 = new javax.swing.JLabel();
         DButton = new javax.swing.JButton();
         ALButton = new javax.swing.JButton();
         LRButton = new javax.swing.JButton();
-        LButton = new javax.swing.JButton();
         PButton = new javax.swing.JButton();
         jPanel1 = new javax.swing.JPanel();
         jLabel7 = new javax.swing.JLabel();
         jLayeredPane1 = new javax.swing.JLayeredPane();
-        PPanel = new javax.swing.JPanel();
-        jLabel8 = new javax.swing.JLabel();
-        NameSearch = new javax.swing.JTextField();
-        jButton3 = new javax.swing.JButton();
-        jLabel17 = new javax.swing.JLabel();
-        PayButton = new javax.swing.JButton();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        PTable = new javax.swing.JTable();
-        jLabel19 = new javax.swing.JLabel();
         DPanel = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
@@ -198,10 +203,30 @@ public class Main extends javax.swing.JFrame {
         JType = new javax.swing.JComboBox<>();
         jLabel1 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
+        PPanel = new javax.swing.JPanel();
+        jLabel8 = new javax.swing.JLabel();
+        jButton3 = new javax.swing.JButton();
+        jLabel17 = new javax.swing.JLabel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        PTable = new javax.swing.JTable();
+        jLabel19 = new javax.swing.JLabel();
+        NameSearch = new javax.swing.JTextField();
+        PayButton = new javax.swing.JButton();
+        jPanel6 = new javax.swing.JPanel();
+        jLabel20 = new javax.swing.JLabel();
+        jLabel21 = new javax.swing.JLabel();
+        jLabel22 = new javax.swing.JLabel();
+        jLabel23 = new javax.swing.JLabel();
+        NameInfo = new javax.swing.JLabel();
+        BalanceInfo = new javax.swing.JLabel();
+        MonthlyInfo = new javax.swing.JLabel();
+        jSeparator1 = new javax.swing.JSeparator();
 
         jTextField5.setText("jTextField5");
 
         jLabel18.setText("jLabel18");
+
+        jLabel24.setText("jLabel24");
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
@@ -227,13 +252,6 @@ public class Main extends javax.swing.JFrame {
         LRButton.setBorder(null);
         LRButton.setName("LRButton"); // NOI18N
         LRButton.addActionListener(this::LRButtonActionPerformed);
-
-        LButton.setBackground(new java.awt.Color(255, 102, 102));
-        LButton.setFont(new java.awt.Font("Arial", 1, 14)); // NOI18N
-        LButton.setForeground(new java.awt.Color(255, 255, 255));
-        LButton.setText("LOGOUT");
-        LButton.setName("LButton"); // NOI18N
-        LButton.addActionListener(this::LButtonActionPerformed);
 
         PButton.setFont(new java.awt.Font("Arial", 1, 14)); // NOI18N
         PButton.setForeground(new java.awt.Color(102, 102, 102));
@@ -266,100 +284,6 @@ public class Main extends javax.swing.JFrame {
         );
 
         jLayeredPane1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
-
-        jLabel8.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel8.setForeground(new java.awt.Color(102, 102, 102));
-        jLabel8.setText("Loan Payment");
-
-        NameSearch.addActionListener(this::NameSearchActionPerformed);
-
-        jButton3.setBackground(new java.awt.Color(0, 102, 102));
-        jButton3.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jButton3.setForeground(new java.awt.Color(255, 255, 255));
-        jButton3.setText("Search");
-        jButton3.addActionListener(this::jButton3ActionPerformed);
-
-        jLabel17.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel17.setText("Name");
-
-        PayButton.setText("PAID THIS MONTH");
-        PayButton.setEnabled(false);
-        PayButton.addActionListener(this::PayButtonActionPerformed);
-
-        PTable.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null}
-            },
-            new String [] {
-                "Name", "Loan Amount", "Balance", "Term", "Monthly Payment"
-            }
-        ) {
-            boolean[] canEdit = new boolean [] {
-                false, false, false, false, false
-            };
-
-            public boolean isCellEditable(int rowIndex, int columnIndex) {
-                return canEdit [columnIndex];
-            }
-        });
-        jScrollPane2.setViewportView(PTable);
-        if (PTable.getColumnModel().getColumnCount() > 0) {
-            PTable.getColumnModel().getColumn(0).setResizable(false);
-            PTable.getColumnModel().getColumn(1).setResizable(false);
-            PTable.getColumnModel().getColumn(2).setResizable(false);
-            PTable.getColumnModel().getColumn(3).setResizable(false);
-        }
-
-        jLabel19.setForeground(new java.awt.Color(102, 102, 102));
-        jLabel19.setText("Please enter the name of the debtor before marking it as paid.");
-
-        javax.swing.GroupLayout PPanelLayout = new javax.swing.GroupLayout(PPanel);
-        PPanel.setLayout(PPanelLayout);
-        PPanelLayout.setHorizontalGroup(
-            PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(PPanelLayout.createSequentialGroup()
-                .addGap(16, 16, 16)
-                .addGroup(PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel8)
-                    .addGroup(PPanelLayout.createSequentialGroup()
-                        .addGroup(PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addGroup(PPanelLayout.createSequentialGroup()
-                                .addGroup(PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel17)
-                                    .addComponent(NameSearch))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 119, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(PayButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jLabel19, javax.swing.GroupLayout.DEFAULT_SIZE, 342, Short.MAX_VALUE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 43, Short.MAX_VALUE)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 683, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap())
-        );
-        PPanelLayout.setVerticalGroup(
-            PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(PPanelLayout.createSequentialGroup()
-                .addGap(18, 18, 18)
-                .addComponent(jLabel8)
-                .addGap(18, 18, 18)
-                .addGroup(PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(PPanelLayout.createSequentialGroup()
-                        .addComponent(jLabel17)
-                        .addGap(4, 4, 4)
-                        .addGroup(PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(NameSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
-                        .addComponent(PayButton, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel19))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(52, Short.MAX_VALUE))
-        );
-
-        jLayeredPane1.add(PPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1090, 540));
 
         DPanel.setName("DPanel"); // NOI18N
         DPanel.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -397,7 +321,7 @@ public class Main extends javax.swing.JFrame {
                 .addComponent(jLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(CLAdata)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(37, Short.MAX_VALUE))
         );
 
         DPanel.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(17, 41, -1, 109));
@@ -446,7 +370,7 @@ public class Main extends javax.swing.JFrame {
 
         jLabel5.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel5.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel5.setText("Cumulative Paid Amount");
+        jLabel5.setText("Cumulative Unpaid Amount");
 
         CPAdata.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
         CPAdata.setForeground(new java.awt.Color(255, 255, 255));
@@ -464,7 +388,7 @@ public class Main extends javax.swing.JFrame {
                 .addGroup(jPanel4Layout.createSequentialGroup()
                     .addGap(23, 23, 23)
                     .addComponent(CPAdata, javax.swing.GroupLayout.PREFERRED_SIZE, 281, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(56, Short.MAX_VALUE)))
+                    .addContainerGap(74, Short.MAX_VALUE)))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -498,7 +422,7 @@ public class Main extends javax.swing.JFrame {
                 {null, null, null, null, null, null}
             },
             new String [] {
-                "Creditor Name", "Loan Amount", "Date", "Term", "Phone No", "Address"
+                "Creditor Name", "Loan Amount", "Balance", "Date", "Term", "Address"
             }
         ));
         jScrollPane1.setViewportView(loan_table);
@@ -519,31 +443,30 @@ public class Main extends javax.swing.JFrame {
         LRPanelLayout.setHorizontalGroup(
             LRPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LRPanelLayout.createSequentialGroup()
-                .addGap(37, 37, 37)
                 .addGroup(LRPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel16)
                     .addGroup(LRPanelLayout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 1020, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(112, 112, 112)
-                        .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(1169, 1169, 1169)
+                        .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(LRPanelLayout.createSequentialGroup()
+                        .addGap(28, 28, 28)
+                        .addGroup(LRPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel16)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 1020, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         LRPanelLayout.setVerticalGroup(
             LRPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LRPanelLayout.createSequentialGroup()
-                .addGap(25, 25, 25)
+                .addGap(22, 22, 22)
                 .addComponent(jLabel16)
-                .addGroup(LRPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(LRPanelLayout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(LRPanelLayout.createSequentialGroup()
-                        .addGap(163, 163, 163)
-                        .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(57, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(250, 250, 250)
+                .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jLayeredPane1.add(LRPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1090, 540));
+        jLayeredPane1.add(LRPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1100, 540));
 
         ALPanel.setName("ALPanel"); // NOI18N
 
@@ -676,7 +599,6 @@ public class Main extends javax.swing.JFrame {
                         .addGroup(ALPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(Date, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(Term, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(ALPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(ALPanelLayout.createSequentialGroup()
                         .addComponent(jLabel13)
@@ -701,6 +623,172 @@ public class Main extends javax.swing.JFrame {
 
         jLayeredPane1.add(ALPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1090, 540));
 
+        jLabel8.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        jLabel8.setForeground(new java.awt.Color(102, 102, 102));
+        jLabel8.setText("Loan Payment");
+
+        jButton3.setBackground(new java.awt.Color(0, 102, 102));
+        jButton3.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jButton3.setForeground(new java.awt.Color(255, 255, 255));
+        jButton3.setText("Search");
+        jButton3.addActionListener(this::jButton3ActionPerformed);
+
+        jLabel17.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel17.setText("Name");
+
+        PTable.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null}
+            },
+            new String [] {
+                "Name", "Loan Amount", "Balance", "Term", "Monthly Payment"
+            }
+        ) {
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false
+            };
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        jScrollPane2.setViewportView(PTable);
+        if (PTable.getColumnModel().getColumnCount() > 0) {
+            PTable.getColumnModel().getColumn(0).setResizable(false);
+            PTable.getColumnModel().getColumn(1).setResizable(false);
+            PTable.getColumnModel().getColumn(2).setResizable(false);
+            PTable.getColumnModel().getColumn(3).setResizable(false);
+        }
+
+        jLabel19.setForeground(new java.awt.Color(102, 102, 102));
+        jLabel19.setText("Please enter the name of the debtor before marking it as paid.");
+
+        NameSearch.addActionListener(this::NameSearchActionPerformed);
+
+        PayButton.setText("PAID THIS MONTH");
+        PayButton.setEnabled(false);
+        PayButton.addActionListener(this::PayButtonActionPerformed);
+
+        jPanel6.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(153, 153, 153)));
+
+        jLabel20.setText("Name:");
+
+        jLabel21.setText("Balance:");
+
+        jLabel22.setText("Monthly Due:");
+
+        jLabel23.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        jLabel23.setForeground(new java.awt.Color(102, 102, 102));
+        jLabel23.setText("Loan Info");
+
+        NameInfo.setText(".");
+
+        BalanceInfo.setText(".");
+
+        MonthlyInfo.setText(".");
+
+        javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
+        jPanel6.setLayout(jPanel6Layout);
+        jPanel6Layout.setHorizontalGroup(
+            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jSeparator1)
+            .addGroup(jPanel6Layout.createSequentialGroup()
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGap(24, 24, 24)
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel6Layout.createSequentialGroup()
+                                .addComponent(jLabel20)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(NameInfo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addGroup(jPanel6Layout.createSequentialGroup()
+                                .addComponent(jLabel21)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(BalanceInfo, javax.swing.GroupLayout.PREFERRED_SIZE, 119, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel6Layout.createSequentialGroup()
+                                .addComponent(jLabel22)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(MonthlyInfo, javax.swing.GroupLayout.PREFERRED_SIZE, 126, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(0, 0, Short.MAX_VALUE))))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGap(137, 137, 137)
+                        .addComponent(jLabel23)))
+                .addContainerGap())
+        );
+        jPanel6Layout.setVerticalGroup(
+            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel6Layout.createSequentialGroup()
+                .addGap(13, 13, 13)
+                .addComponent(jLabel23)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(10, 10, 10)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel20)
+                    .addComponent(NameInfo))
+                .addGap(43, 43, 43)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel21)
+                    .addComponent(BalanceInfo))
+                .addGap(41, 41, 41)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel22)
+                    .addComponent(MonthlyInfo))
+                .addContainerGap(83, Short.MAX_VALUE))
+        );
+
+        javax.swing.GroupLayout PPanelLayout = new javax.swing.GroupLayout(PPanel);
+        PPanel.setLayout(PPanelLayout);
+        PPanelLayout.setHorizontalGroup(
+            PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(PPanelLayout.createSequentialGroup()
+                .addGap(16, 16, 16)
+                .addGroup(PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(PPanelLayout.createSequentialGroup()
+                        .addGroup(PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addGroup(PPanelLayout.createSequentialGroup()
+                                .addGroup(PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel17)
+                                    .addComponent(NameSearch))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 119, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(PayButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel19, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(18, 18, 18)
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 683, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabel8))
+                .addContainerGap(31, Short.MAX_VALUE))
+        );
+        PPanelLayout.setVerticalGroup(
+            PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(PPanelLayout.createSequentialGroup()
+                .addGap(18, 18, 18)
+                .addComponent(jLabel8)
+                .addGap(18, 18, 18)
+                .addGroup(PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(PPanelLayout.createSequentialGroup()
+                        .addComponent(jLabel17)
+                        .addGap(4, 4, 4)
+                        .addGroup(PPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(NameSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(18, 18, 18)
+                        .addComponent(PayButton, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel19)
+                        .addGap(18, 18, 18)
+                        .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jScrollPane2))
+                .addContainerGap(38, Short.MAX_VALUE))
+        );
+
+        jLayeredPane1.add(PPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1090, 540));
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -708,10 +796,7 @@ public class Main extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(LButton, javax.swing.GroupLayout.PREFERRED_SIZE, 174, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(LRButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(LRButton, javax.swing.GroupLayout.DEFAULT_SIZE, 174, Short.MAX_VALUE)
                     .addComponent(PButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(ALButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(DButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -734,8 +819,7 @@ public class Main extends javax.swing.JFrame {
                         .addComponent(LRButton, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(PButton, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(432, 432, 432)
-                        .addComponent(LButton, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(476, 476, 476))
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -767,6 +851,8 @@ public class Main extends javax.swing.JFrame {
       
       dashboard.refreshDashboard();
       CLdata.setText(String.valueOf(Dashboard.current_loans));
+      CLAdata.setText(String.valueOf(Dashboard.cumulative_loan_amount));
+      CPAdata.setText(String.valueOf(Dashboard.cumulative_unpaid_amount));
     }//GEN-LAST:event_DButtonActionPerformed
 
     private void LRButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LRButtonActionPerformed
@@ -789,12 +875,6 @@ public class Main extends javax.swing.JFrame {
         
         loadLoansToTable(loan_table);
     }//GEN-LAST:event_LRButtonActionPerformed
-
-    private void LButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LButtonActionPerformed
-        Login l = new Login();
-        l.setVisible(true);
-        this.dispose(); 
-    }//GEN-LAST:event_LButtonActionPerformed
 
     private void ALButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ALButtonActionPerformed
         DButton.setBackground(Color.WHITE);
@@ -844,17 +924,32 @@ public class Main extends javax.swing.JFrame {
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
   
         if(conn!=null){
-        String client_name = CName.getText();
-        int loan_amount = Integer.parseInt(LAmount.getText());
-        String date = Date.getText();
-        int term = Integer.parseInt(Term.getText());
-        String number = Number.getText();
-        String client_address = CAddress.getText();
-        String job_type = (String)JType.getSelectedItem();
+        String client_name = CName.getText().trim();
+        String loan_amountText = LAmount.getText().trim();
+        String date = Date.getText().trim();
+        String termText = Term.getText().trim();
+        String number = Number.getText().trim();
+        String client_address = CAddress.getText().trim();
+        String job_type = (String) JType.getSelectedItem();
+
+
+        if (client_name.isEmpty() || loan_amountText.isEmpty() || date.isEmpty() ||
+        termText.isEmpty() || number.isEmpty() || client_address.isEmpty() ||
+        job_type == null || job_type.trim().isEmpty()) {
+
+        JOptionPane.showMessageDialog(null, "Please fill in all fields!");
+        return; 
+        }
+
+ 
+        int loan_amount = Integer.parseInt(loan_amountText);
+        int term = Integer.parseInt(termText);
+        
         
         if(job_type == "Government Employee"){
             try {
                 GovDebtor gd = new GovDebtor(client_name, loan_amount, date, term, number,client_address);
+                JOptionPane.showMessageDialog(null, "Inputted Succesfully!");
             } catch (SQLException ex) {
                 System.getLogger(Main.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
             }
@@ -863,6 +958,7 @@ public class Main extends javax.swing.JFrame {
         else{
             try {
                 PrivateDebtor pd = new PrivateDebtor(client_name, loan_amount, date, term, number,client_address);
+                JOptionPane.showMessageDialog(null, "Inputted Succesfully!");
             } catch (SQLException ex) {
                 System.getLogger(Main.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
             }
@@ -901,7 +997,7 @@ public class Main extends javax.swing.JFrame {
         DPanel.setVisible(false);
         ALPanel.setVisible(false);
         LRPanel.setVisible(false);
-        
+        loadLoansToTable(PTable);
     }//GEN-LAST:event_PButtonActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
@@ -926,14 +1022,22 @@ public class Main extends javax.swing.JFrame {
        String name_search = NameSearch.getText();
        
        if(conn!=null){
-           PaymentTable(PTable, name_search);
+           PaymentTable(name_search);
        }
        
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void PayButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PayButtonActionPerformed
         // TODO add your handling code here:
+        String name_search = NameSearch.getText();
         
+        if(conn!=null){
+            try {
+                DeductLoan(name_search);
+            } catch (SQLException ex) {
+                System.getLogger(Main.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            }
+        }
     }//GEN-LAST:event_PayButtonActionPerformed
 
     /**
@@ -964,6 +1068,7 @@ public class Main extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton ALButton;
     private javax.swing.JPanel ALPanel;
+    private javax.swing.JLabel BalanceInfo;
     private javax.swing.JTextField CAddress;
     private javax.swing.JLabel CLAdata;
     public javax.swing.JLabel CLdata;
@@ -974,9 +1079,10 @@ public class Main extends javax.swing.JFrame {
     private javax.swing.JTextField Date;
     private javax.swing.JComboBox<String> JType;
     private javax.swing.JTextField LAmount;
-    private javax.swing.JButton LButton;
     private javax.swing.JButton LRButton;
     private javax.swing.JPanel LRPanel;
+    private javax.swing.JLabel MonthlyInfo;
+    private javax.swing.JLabel NameInfo;
     private javax.swing.JTextField NameSearch;
     private javax.swing.JTextField Number;
     private javax.swing.JButton PButton;
@@ -999,6 +1105,11 @@ public class Main extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel18;
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel20;
+    private javax.swing.JLabel jLabel21;
+    private javax.swing.JLabel jLabel22;
+    private javax.swing.JLabel jLabel23;
+    private javax.swing.JLabel jLabel24;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -1012,8 +1123,10 @@ public class Main extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
+    private javax.swing.JPanel jPanel6;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JSeparator jSeparator1;
     private javax.swing.JTextField jTextField5;
     private javax.swing.JTable loan_table;
     // End of variables declaration//GEN-END:variables
